@@ -15,11 +15,17 @@ function pickVoice(lang) {
   return VOICES.find(v => v.lang && v.lang.toLowerCase() === lang.toLowerCase())
       || VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref)) || null;
 }
+/* מתקן הגייה: סימן מעלות נקרא "מעלה" ביחיד, ו"שלי" בלי ניקוד נקרא שגוי */
+function forSpeech(t) {
+  return String(t)
+    .replace(/°/g, " מעלות")
+    .replace(/שלי/g, "שֶׁלִּי");
+}
 function speakHe(text, { rate = 0.95, pitch = 1.05 } = {}) {
   return new Promise(resolve => {
     if (!window.speechSynthesis) return resolve();
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(forSpeech(text));
     u.lang = "he-IL"; u.rate = rate; u.pitch = pitch;
     const v = pickVoice("he-IL"); if (v) u.voice = v;
     u.onend = resolve; u.onerror = resolve;
@@ -169,6 +175,23 @@ function shuffle(arr) {
 }
 function sample(arr, k) { return shuffle(arr).slice(0, k); }
 function randItem(arr) { return arr[(Math.random() * arr.length) | 0]; }
+
+/* בחירה ללא חזרה: עוברים על כל פריטי המאגר לפני שחוזרים, וגם
+   לא חוזרים על אותו פריט בגבול בין "שק" ל"שק". מפתח לפי הפניית המערך. */
+const _bags = new Map(), _bagLast = new Map();
+function bagItem(arr) {
+  if (!arr || arr.length === 0) return undefined;
+  if (arr.length === 1) return arr[0];
+  let bag = _bags.get(arr);
+  if (!bag || bag.length === 0) {
+    bag = shuffle(arr);
+    if (bag[bag.length - 1] === _bagLast.get(arr)) [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+    _bags.set(arr, bag);
+  }
+  const it = bag.pop();
+  _bagLast.set(arr, it);
+  return it;
+}
 function el(tag, cls, html) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -228,19 +251,30 @@ function svgBox(pts, pad = 36) {
   return { minx, miny, w: (maxx - minx) + pad * 2, h: (maxy - miny) + pad * 2, pad };
 }
 
-/* מצולע (משולש/מרובע). labels — מספרים ליד הקודקודים; fill — צבע מילוי */
+/* מצולע (משולש/מרובע). labels — סימון זווית סטנדרטי: קשת קטנה בכל קודקוד
+   והמספר בתוך הצורה ליד הקשת, בלי להסתיר את הקודקוד. fill — צבע מילוי */
 function polygonSvg(pts, { labels, fill = "#dbeafe" } = {}) {
   const box = svgBox(pts);
   const vb = `${box.minx - box.pad} ${box.miny - box.pad} ${box.w} ${box.h}`;
   const poly = pts.map(p => p.join(",")).join(" ");
-  const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
-  const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+  const uvec = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1; return [dx / m, dy / m]; };
   let extra = "";
-  if (labels) pts.forEach((p, i) => {
-    const lx = p[0] + (cx - p[0]) * 0.26, ly = p[1] + (cy - p[1]) * 0.26;
-    extra += `<circle cx="${lx}" cy="${ly}" r="16" fill="#fff" stroke="#9b5de5" stroke-width="2.5"/>`
-           + `<text x="${lx}" y="${ly + 6}" text-anchor="middle" font-size="21" font-weight="800" fill="#9b5de5">${labels[i]}</text>`;
-  });
+  if (labels) {
+    const n = pts.length;
+    pts.forEach((p, i) => {
+      const prev = pts[(i - 1 + n) % n], next = pts[(i + 1) % n];
+      const u1 = uvec(p, prev), u2 = uvec(p, next);
+      let a1 = Math.atan2(u1[1], u1[0]), a2 = Math.atan2(u2[1], u2[0]);
+      let d = a2 - a1; while (d <= -Math.PI) d += 2 * Math.PI; while (d > Math.PI) d -= 2 * Math.PI;
+      const r = 22, steps = 16, arc = [];
+      for (let s = 0; s <= steps; s++) { const t = a1 + d * s / steps; arc.push((p[0] + r * Math.cos(t)).toFixed(1) + "," + (p[1] + r * Math.sin(t)).toFixed(1)); }
+      extra += `<polyline points="${arc.join(" ")}" fill="none" stroke="#9b5de5" stroke-width="3"/>`;
+      const bis = a1 + d / 2, lr = r + 17;
+      const lx = p[0] + lr * Math.cos(bis), ly = p[1] + lr * Math.sin(bis);
+      extra += `<circle cx="${lx}" cy="${ly}" r="13" fill="#fff" stroke="#9b5de5" stroke-width="2"/>`
+             + `<text x="${lx}" y="${ly + 6}" text-anchor="middle" font-size="18" font-weight="800" fill="#9b5de5">${labels[i]}</text>`;
+    });
+  }
   return `<svg viewBox="${vb}" class="shape-svg"><polygon points="${poly}" fill="${fill}" `
        + `stroke="#2b2140" stroke-width="3" stroke-linejoin="round"/>${extra}</svg>`;
 }
