@@ -19,12 +19,12 @@ function pickVoice(lang) {
   const score = v => {
     const n = (v.name || "").toLowerCase();
     let s = 0;
-    if (n.includes("google")) s += 100;          // Chrome/Edge — הכי טבעי
-    if (n.includes("natural") || n.includes("neural")) s += 80;
-    if (n.includes("carmit")) s += 50;            // iOS/macOS — קול נעים
-    if (n.includes("online")) s += 20;
-    if (v.localService === false) s += 15;        // קולות ענן בד"כ איכותיים יותר
-    if (n.includes("asaf")) s += 3;               // מיקרוסופט — עדיף על כלום
+    if (n.includes("natural") || n.includes("neural")) s += 120; // קולות נוירוניים — הכי טבעי
+    if (n.includes("google")) s += 100;                          // Chrome/Android — טבעי
+    if (v.localService === false) s += 40;                       // קולות ענן (לא רובוטיים)
+    if (n.includes("online")) s += 30;
+    if (n.includes("carmit") || n.includes("hila")) s += 25;     // קולות נשיים נעימים
+    if (n.includes("asaf")) s -= 30;                             // קול רובוטי ישן — להימנע אם יש אחר
     return s;
   };
   return cands.slice().sort((a, b) => score(b) - score(a))[0];
@@ -39,9 +39,10 @@ function forSpeech(t) {
     .replace(/מ-90/g, "מתשעים")
     .replace(/מ-180/g, "ממאה ושמונים")
     .replace(/°/g, " מעלות")
-    .replace(/־/g, " ");
+    .replace(/־/g, " ")
+    .replace(/שלי/g, "שֶׁלִּי");   // אותה מילה — רק כדי שתיהגה "שֶׁלִי" ולא שגוי
 }
-function speakHe(text, { rate = 0.95, pitch = 1.05 } = {}) {
+function speakHe(text, { rate = 0.95, pitch = 1.0 } = {}) {
   return new Promise(resolve => {
     if (!window.speechSynthesis) return resolve();
     speechSynthesis.cancel();
