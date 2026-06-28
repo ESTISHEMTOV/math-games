@@ -90,6 +90,7 @@
     }
 
     /* ---------- נתונים ---------- */
+    const DEGS = [25, 35, 45, 55, 70, 80, 90, 100, 115, 130, 145, 155];
     const TRIANGLES = [
       [[55, 2], [0, 97], [110, 97]],     // שווה־צלעות / חד־זוויות
       [[55, 0], [8, 118], [102, 118]],   // שווה־שוקיים / חד־זוויות
@@ -149,8 +150,7 @@
 
     /* ---------- בוני סבבים ---------- */
     function roundAngleType(next) {
-      const DEGS = [25, 35, 45, 55, 70, 80, 90, 100, 115, 130, 145, 155];
-      const deg = randItem(DEGS);
+      const deg = bagItem(DEGS);
       const kind = deg < 90 ? "חדה" : (deg > 90 ? "קהה" : "ישרה");
       const opts = ["זווית חדה", "זווית ישרה", "זווית קהה"];
       const why = deg === 90 ? "זווית של 90° היא בדיוק זווית ישרה."
@@ -166,7 +166,7 @@
     }
 
     function roundSides(next) {
-      const pts = randItem(TRIANGLES);
+      const pts = bagItem(TRIANGLES);
       const cls = classifyTriangle(pts).sides;
       const opts = ["משולש שווה־צלעות", "משולש שווה־שוקיים", "משולש שונה־צלעות"];
       askMC({
@@ -178,7 +178,7 @@
     }
 
     function roundAngles(next) {
-      const pts = randItem(TRIANGLES);
+      const pts = bagItem(TRIANGLES);
       const cls = classifyTriangle(pts).angles;
       const opts = ["משולש ישר־זווית", "משולש חד־זוויות", "משולש קהה־זווית"];
       askMC({
@@ -190,7 +190,7 @@
     }
 
     function roundWhoAmI(next) {
-      const r = randItem(RIDDLES);
+      const r = bagItem(RIDDLES);
       const opts = shuffle(r.o);
       askMC({
         prompt: r.q, options: opts, correctIndex: opts.indexOf(r.a),
@@ -199,7 +199,7 @@
     }
 
     function roundTrueFalse(next) {
-      const t = randItem(TF);
+      const t = bagItem(TF);
       const opts = ["נכון ✓", "לא נכון ✗"];
       askMC({
         prompt: t.s, options: opts, correctIndex: t.ans ? 0 : 1,
@@ -208,7 +208,7 @@
     }
 
     function roundBiggest(next) {
-      const q = randItem(QUADS);
+      const q = bagItem(QUADS);
       const angs = polygonAngles(q);
       const idx = angs.indexOf(Math.max(...angs));
       const labels = ["1", "2", "3", "4"];
