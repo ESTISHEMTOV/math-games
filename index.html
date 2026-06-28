@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>תרגול חשבון בכיף 🧮</title>
+  <script>document.write('<link rel="stylesheet" href="style.css?t=' + Date.now() + '">');</script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <span style="width:90px"></span>
+      <div class="score" id="score">⭐ 0</div>
+    </div>
+
+    <h1 class="page-title">תרגול חשבון בכיף 🧮</h1>
+    <p class="subtitle">בחרי נושא לתרגול 👇</p>
+
+    <button class="subject c-mix" onclick="location.href='triangles.html'">
+      <span class="ico">📐</span>
+      <span class="ttl">משולשים וזוויות</span>
+      <span class="sub">סוגי זוויות · סוגי משולשים · נכון או לא</span>
+    </button>
+
+    <div class="games-grid" style="margin-top:26px; max-width:480px; margin-inline:auto;">
+      <button class="game-card c-yellow" onclick="location.href='triangles.html#progress'">
+        <span class="ico">🏆</span><span class="ttl">ההתקדמות שלי</span><span class="sub">שלבים ואליפויות</span>
+      </button>
+    </div>
+  </div>
+
+  <script>document.write('<script src="engine.js?t=' + Date.now() + '"><\/script>');</script>
+  <script>Score.init(document.getElementById("score"), "girl");</script>
+</body>
+</html>
