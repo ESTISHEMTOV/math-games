@@ -9,16 +9,32 @@
 let VOICES = [];
 function loadVoices() { VOICES = window.speechSynthesis ? speechSynthesis.getVoices() : []; }
 if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+/* בוחר את הקול הכי טבעי שיש (Google / Natural / Neural) ולא את הקול
+   הרובוטי של מיקרוסופט, כדי שיישמע אנושי ולא כמו מכונה. */
 function pickVoice(lang) {
   if (!VOICES.length) loadVoices();
   const pref = lang.slice(0, 2).toLowerCase();
-  return VOICES.find(v => v.lang && v.lang.toLowerCase() === lang.toLowerCase())
-      || VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref)) || null;
+  const cands = VOICES.filter(v => v.lang && v.lang.toLowerCase().startsWith(pref));
+  if (!cands.length) return null;
+  const score = v => {
+    const n = (v.name || "").toLowerCase();
+    let s = 0;
+    if (n.includes("google")) s += 100;          // Chrome/Edge — הכי טבעי
+    if (n.includes("natural") || n.includes("neural")) s += 80;
+    if (n.includes("carmit")) s += 50;            // iOS/macOS — קול נעים
+    if (n.includes("online")) s += 20;
+    if (v.localService === false) s += 15;        // קולות ענן בד"כ איכותיים יותר
+    if (n.includes("asaf")) s += 3;               // מיקרוסופט — עדיף על כלום
+    return s;
+  };
+  return cands.slice().sort((a, b) => score(b) - score(a))[0];
 }
 /* מתקן הגייה: סימן מעלות נקרא "מעלה" ביחיד, ו"שלי" בלי ניקוד נקרא שגוי */
 function forSpeech(t) {
   return String(t)
     .replace(/°/g, " מעלות")
+    .replace(/באורכן/g, "באורך")
+    .replace(/שוות/g, "שָׁווֹת")
     .replace(/שלי/g, "שֶׁלִּי");
 }
 function speakHe(text, { rate = 0.95, pitch = 1.05 } = {}) {
