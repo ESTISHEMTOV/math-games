@@ -35,6 +35,11 @@ function forSpeech(t) {
     .replace(/°/g, " מעלות")
     .replace(/באורכן/g, "באורך")
     .replace(/שוות/g, "שָׁווֹת")
+    .replace(/קהות/g, "קֵהוֹת")
+    .replace(/קהה/g, "קֵהֶה")
+    .replace(/חדות/g, "חַדּוֹת")
+    .replace(/חדה/g, "חַדָּה")
+    .replace(/שוקיים/g, "שׁוֹקַיִם")
     .replace(/שלי/g, "שֶׁלִּי");
 }
 function speakHe(text, { rate = 0.95, pitch = 1.05 } = {}) {
