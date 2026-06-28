@@ -40,6 +40,8 @@ function forSpeech(t) {
     .replace(/חדות/g, "חַדּוֹת")
     .replace(/חדה/g, "חַדָּה")
     .replace(/שוקיים/g, "שׁוֹקַיִם")
+    .replace(/ישרות/g, "יְשָׁרוֹת")
+    .replace(/ישרה/g, "יְשָׁרָה")
     .replace(/שלי/g, "שֶׁלִּי");
 }
 function speakHe(text, { rate = 0.95, pitch = 1.05 } = {}) {
