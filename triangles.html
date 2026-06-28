@@ -158,12 +158,16 @@
       { type: "iso",   pts: [[58, 6], [22, 120], [98, 120]],  rightAt: -1, roles: ["שוק", "בסיס", "שוק"], opts: ["שוק", "בסיס", "יתר"] },
       { type: "right", pts: [[12, 12], [12, 124], [150, 124]], rightAt: 1, roles: ["ניצב", "ניצב", "יתר"], opts: ["יתר", "ניצב", "שוק"] },
       { type: "right", pts: [[18, 18], [150, 18], [150, 130]], rightAt: 1, roles: ["ניצב", "ניצב", "יתר"], opts: ["יתר", "ניצב", "בסיס"] },
+      { type: "equi",  pts: [[55, 2], [0, 97], [110, 97]],    rightAt: -1, roles: ["צלע רגילה", "צלע רגילה", "צלע רגילה"], opts: ["צלע רגילה", "שוק", "בסיס"] },
+      { type: "scal",  pts: [[40, 4], [4, 96], [140, 72]],    rightAt: -1, roles: ["צלע רגילה", "צלע רגילה", "צלע רגילה"], opts: ["צלע רגילה", "שוק", "יתר"] },
     ];
+    const SIDE_FILL = { iso: "#dcfce7", right: "#fde7f1", equi: "#fff3c4", scal: "#e0f2fe" };
     const ROLE_WHY = {
       "שוק":  "שתי הצלעות השוות במשולש שווה־שוקיים נקראות שוקיים — כל אחת מהן היא שוק.",
       "בסיס": "הצלע השלישית, זו שאינה שוק, נקראת הבסיס.",
       "יתר":  "הצלע שמול הזווית הישרה היא הארוכה ביותר ונקראת היתר.",
       "ניצב": "שתי הצלעות שיוצרות את הזווית הישרה נקראות ניצבים — כל אחת מהן היא ניצב.",
+      "צלע רגילה": "לצלע הזו אין שם מיוחד. השמות שוק ובסיס שייכים למשולש שווה־שוקיים, והשמות יתר וניצב למשולש ישר־זווית.",
     };
 
     /* ציור משולש עם: הדגשת צלע (hi), סימון זווית ישרה (rightAt), ותוויות צלעות */
@@ -274,10 +278,10 @@
       const role = sh.roles[ei];
       const opts = shuffle(sh.opts);
       askMC({
-        prompt: "מה שם הצלע הצבועה?",
-        shape: triSvg(sh.pts, { hi: ei, rightAt: sh.rightAt, fill: sh.type === "iso" ? "#dcfce7" : "#fde7f1" }),
+        prompt: "איך נקראת הצלע הצבועה?",
+        shape: triSvg(sh.pts, { hi: ei, rightAt: sh.rightAt, fill: SIDE_FILL[sh.type] }),
         options: opts, correctIndex: opts.indexOf(role),
-        explain: ROLE_WHY[role], speakText: "מה שם הצלע הצבועה?", next,
+        explain: ROLE_WHY[role], speakText: "איך נקראת הצלע הצבועה?", next,
       });
     }
 
@@ -301,6 +305,7 @@
         triSvg([[12, 12], [12, 124], [150, 124]], { edgeLabels: ["ניצב", "ניצב", "יתר"], rightAt: 1, fill: "#fde7f1" }),
         "הצלע שמול הזווית הישרה היא היתר. שתי הצלעות שיוצרות אותה הן הניצבים."));
       stage.appendChild(wrap);
+      stage.appendChild(el("div", "explain", "שימי לב: במשולש שווה־צלעות ובמשולש שונה־צלעות אין שמות מיוחדים לצלעות — כל אחת נקראת פשוט ״צלע״."));
       const acts = el("div", "actions");
       const go = el("button", "action next", "קדימה לתרגול! ✅");
       go.onclick = then;
