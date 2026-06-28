@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>משולשים וזוויות 📐</title>
+  <script>document.write('<link rel="stylesheet" href="style.css?t=' + Date.now() + '">');</script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn-back" id="back">⬅️ חזרה</button>
+      <div class="score" id="score">⭐ 0</div>
+    </div>
+
+    <!-- תפריט סוגי התרגילים -->
+    <div id="menu">
+      <h1 class="page-title">משולשים וזוויות 📐</h1>
+      <p class="subtitle">בחרי תרגול 👇</p>
+      <div class="games-grid">
+        <button class="game-card c-blue"   onclick="play('angleType')"><span class="ico">📐</span><span class="ttl">סוג הזווית</span><span class="sub">חדה · ישרה · קהה</span></button>
+        <button class="game-card c-purple" onclick="play('whoAmI')"><span class="ico">❓</span><span class="ttl">מי אני?</span><span class="sub">חידות על זוויות ומשולשים</span></button>
+        <button class="game-card c-teal"   onclick="play('sides')"><span class="ico">📏</span><span class="ttl">משולש לפי צלעות</span><span class="sub">שווה־צלעות · שוקיים · שונה</span></button>
+        <button class="game-card c-pink"   onclick="play('angles')"><span class="ico">🔺</span><span class="ttl">משולש לפי זוויות</span><span class="sub">ישר · חד · קהה</span></button>
+        <button class="game-card c-peach"  onclick="play('biggest')"><span class="ico">🔍</span><span class="ttl">הזווית הכי גדולה</span><span class="sub">במרובע</span></button>
+        <button class="game-card c-green"  onclick="play('trueFalse')"><span class="ico">✅</span><span class="ttl">נכון או לא נכון</span><span class="sub">משפטים על משולשים</span></button>
+        <button class="game-card c-mix"    onclick="play('mixed')"><span class="ico">🎲</span><span class="ttl">תרגול מעורב</span><span class="sub">הכל ביחד</span></button>
+        <button class="game-card c-yellow" onclick="play('progress')"><span class="ico">🏆</span><span class="ttl">ההתקדמות שלי</span><span class="sub">שלבים ואליפויות</span></button>
+      </div>
+    </div>
+
+    <!-- מסך תרגיל -->
+    <div id="stageWrap" class="hidden"><div class="stage" id="stage"></div></div>
+  </div>
+
+  <script>document.write('<script src="engine.js?t=' + Date.now() + '"><\/script>');</script>
+  <script>
+    const PLAYER = "girl";
+    const menu = document.getElementById("menu");
+    const stageWrap = document.getElementById("stageWrap");
+    const stage = document.getElementById("stage");
+    Score.init(document.getElementById("score"), PLAYER);
+
+    function showMenu() { speechSynthesis && speechSynthesis.cancel(); menu.classList.remove("hidden"); stageWrap.classList.add("hidden"); }
+    function showStage() { speechSynthesis && speechSynthesis.cancel(); menu.classList.add("hidden"); stageWrap.classList.remove("hidden"); stage.innerHTML = ""; }
+    document.getElementById("back").onclick = () => {
+      if (stageWrap.classList.contains("hidden")) location.href = "index.html";
+      else showMenu();
+    };
+
+    /* ---------- שאלת רב־ברירה אחת ---------- */
+    function askMC({ prompt, shape, options, correctIndex, explain, speakText, next }) {
+      stage.innerHTML = "";
+      stage.appendChild(el("div", "prompt-he", prompt));
+      if (shape) { const box = el("div"); box.innerHTML = shape; stage.appendChild(box.firstChild); }
+
+      const grid = el("div", "opts");
+      const fb = el("div", "feedback");
+      const actions = el("div", "actions");
+      const hear = el("button", "action listen", "🔊 שמיעה");
+      hear.onclick = () => speakHe(speakText || prompt.replace(/[^֐-׿0-9° ?.]/g, " "));
+      const nextBtn = el("button", "action next hidden", "➡️ הבא");
+      nextBtn.onclick = next;
+      actions.append(hear, nextBtn);
+
+      const buttons = [];
+      options.forEach((label, i) => {
+        const b = el("button", "opt", label);
+        b.onclick = () => {
+          if (b.disabled || nextBtn.classList.contains("hidden") === false) return;
+          if (i === correctIndex) {
+            b.classList.add("correct");
+            buttons.forEach(x => x.disabled = true);
+            soundCorrect(); confetti(70); Score.add();
+            fb.className = "feedback great";
+            fb.textContent = randItem(["כל הכבוד! 🌟", "מצוין! 🎉", "נכון מאוד! 👏", "יופי! ⭐"]);
+            if (explain) { const ex = el("div", "explain", explain); stage.insertBefore(ex, actions); }
+            nextBtn.classList.remove("hidden");
+            speakHe(randItem(["כל הכבוד!", "מצוין!", "נכון מאוד!", "יופי!"]));
+          } else {
+            b.classList.add("wrong"); b.disabled = true; soundTry();
+            fb.className = "feedback try"; fb.textContent = "כמעט… עוד פעם 🙂";
+          }
+        };
+        grid.appendChild(b); buttons.push(b);
+      });
+
+      stage.append(grid, fb, actions);
+      speakHe(speakText || prompt.replace(/[^֐-׿0-9° ?.]/g, " "));
+    }
+
+    /* ---------- נתונים ---------- */
+    const TRIANGLES = [
+      [[55, 2], [0, 97], [110, 97]],     // שווה־צלעות / חד־זוויות
+      [[55, 0], [8, 118], [102, 118]],   // שווה־שוקיים / חד־זוויות
+      [[4, 4], [4, 116], [116, 116]],    // שווה־שוקיים / ישר־זווית
+      [[60, 66], [0, 100], [120, 100]],  // שווה־שוקיים / קהה־זווית
+      [[4, 4], [4, 96], [150, 96]],      // שונה־צלעות / ישר־זווית
+      [[40, 4], [4, 96], [140, 72]],     // שונה־צלעות / חד־זוויות
+      [[0, 90], [160, 90], [30, 40]],    // שונה־צלעות / קהה־זווית
+    ];
+    const SIDE_HE   = { equilateral: "משולש שווה־צלעות", isosceles: "משולש שווה־שוקיים", scalene: "משולש שונה־צלעות" };
+    const SIDE_WHY  = {
+      equilateral: "כל שלוש הצלעות שוות באורכן — לכן זה משולש שווה־צלעות.",
+      isosceles:   "שתי צלעות שוות באורכן — לכן זה משולש שווה־שוקיים.",
+      scalene:     "כל הצלעות שונות באורכן — לכן זה משולש שונה־צלעות.",
+    };
+    const ANGLE_HE  = { right: "משולש ישר־זווית", acute: "משולש חד־זוויות", obtuse: "משולש קהה־זווית" };
+    const ANGLE_WHY = {
+      right:  "יש זווית של 90° — לכן זה משולש ישר־זווית.",
+      acute:  "כל הזוויות קטנות מ-90° — לכן זה משולש חד־זוויות.",
+      obtuse: "יש זווית גדולה מ-90° — לכן זה משולש קהה־זווית.",
+    };
+
+    const QUADS = [   // נבדקו: לכל מרובע זווית גדולה אחת ברורה (במיקום משתנה)
+      [[170, 40], [120, 176], [24, 120], [30, 20]],   // הגדולה: מס' 3
+      [[40, 150], [16, 70], [80, 8], [150, 140]],     // הגדולה: מס' 2
+      [[40, 140], [20, 20], [160, 60], [150, 170]],   // הגדולה: מס' 1
+      [[110, 16], [170, 150], [30, 150], [20, 80]],   // הגדולה: מס' 4
+      [[40, 12], [160, 30], [150, 150], [30, 90]],    // הגדולה: מס' 4
+    ];
+
+    const RIDDLES = [
+      { q: "אני זווית הקטנה מ-90°. מי אני?", a: "זווית חדה", o: ["זווית חדה", "זווית ישרה", "זווית קהה"] },
+      { q: "אני זווית הגדולה מ-90° (וקטנה מ-180°). מי אני?", a: "זווית קהה", o: ["זווית חדה", "זווית ישרה", "זווית קהה"] },
+      { q: "אני זווית בת 90° בדיוק. מי אני?", a: "זווית ישרה", o: ["זווית חדה", "זווית ישרה", "זווית קהה"] },
+      { q: "במשולש שלי כל שלוש הצלעות שוות. מי אני?", a: "משולש שווה־צלעות", o: ["משולש שווה־צלעות", "משולש שווה־שוקיים", "משולש שונה־צלעות"] },
+      { q: "במשולש שלי בדיוק שתי צלעות שוות. מי אני?", a: "משולש שווה־שוקיים", o: ["משולש שווה־צלעות", "משולש שווה־שוקיים", "משולש שונה־צלעות"] },
+      { q: "במשולש שלי כל הצלעות שונות באורכן. מי אני?", a: "משולש שונה־צלעות", o: ["משולש שווה־צלעות", "משולש שווה־שוקיים", "משולש שונה־צלעות"] },
+      { q: "במשולש שלי יש זווית של 90°. מי אני?", a: "משולש ישר־זווית", o: ["משולש ישר־זווית", "משולש חד־זוויות", "משולש קהה־זווית"] },
+      { q: "במשולש שלי כל הזוויות קטנות מ-90°. מי אני?", a: "משולש חד־זוויות", o: ["משולש ישר־זווית", "משולש חד־זוויות", "משולש קהה־זווית"] },
+      { q: "במשולש שלי יש זווית הגדולה מ-90°. מי אני?", a: "משולש קהה־זווית", o: ["משולש ישר־זווית", "משולש חד־זוויות", "משולש קהה־זווית"] },
+      { q: "אני סכום כל הזוויות בכל משולש. מי אני?", a: "180°", o: ["90°", "180°", "360°"] },
+    ];
+
+    const TF = [
+      { s: "במשולש קהה־זווית כל הזוויות קהות.", ans: false, why: "במשולש יכולה להיות רק זווית קהה אחת — שתי האחרות חדות." },
+      { s: "במשולש חד־זווית כל הזוויות חדות.", ans: true, why: "נכון! כל שלוש הזוויות קטנות מ-90°." },
+      { s: "במשולש שווה־צלעות רק שתי צלעות שוות.", ans: false, why: "במשולש שווה־צלעות כל שלוש הצלעות שוות." },
+      { s: "משולש ישר־זווית יכול להיות גם שווה־שוקיים.", ans: true, why: "נכון! זווית ישרה אחת ושתי צלעות שוות — אפשרי." },
+      { s: "בכל משולש יש 3 צלעות.", ans: true, why: "כמובן — לכל משולש יש בדיוק 3 צלעות ו-3 זוויות." },
+      { s: "בכל משולש כל הצלעות שוות באורכן.", ans: false, why: "רק במשולש שווה־צלעות. במשולשים אחרים הצלעות שונות." },
+      { s: "בכל משולש יש לפחות זווית חדה אחת.", ans: true, why: "נכון — בכל משולש יש לפחות שתי זוויות חדות." },
+      { s: "סכום הזוויות בכל משולש הוא 180°.", ans: true, why: "בדיוק! תמיד 180°." },
+      { s: "משולש יכול להיות גם ישר־זווית וגם קהה־זווית.", ans: false, why: "לא — אפשר רק זווית אחת שגדולה או שווה ל-90°." },
+      { s: "במשולש שווה־צלעות כל הזוויות שוות, 60° כל אחת.", ans: true, why: "נכון! שלוש זוויות של 60°, סכום 180°." },
+      { s: "במשולש יכולות להיות שתי זוויות ישרות.", ans: false, why: "לא — שתי זוויות של 90° כבר נותנות 180° לבד." },
+    ];
+
+    /* ---------- בוני סבבים ---------- */
+    function roundAngleType(next) {
+      const DEGS = [25, 35, 45, 55, 70, 80, 90, 100, 115, 130, 145, 155];
+      const deg = randItem(DEGS);
+      const kind = deg < 90 ? "חדה" : (deg > 90 ? "קהה" : "ישרה");
+      const opts = ["זווית חדה", "זווית ישרה", "זווית קהה"];
+      const why = deg === 90 ? "זווית של 90° היא בדיוק זווית ישרה."
+        : (deg < 90 ? `זווית של ${deg}° קטנה מ-90° ולכן היא זווית חדה.`
+                    : `זווית של ${deg}° גדולה מ-90° ולכן היא זווית קהה.`);
+      askMC({
+        prompt: "איזו זווית זו? 📐",
+        shape: angleSvg(deg),
+        options: opts,
+        correctIndex: opts.indexOf("זווית " + kind),
+        explain: why, speakText: "איזו זווית זו?", next,
+      });
+    }
+
+    function roundSides(next) {
+      const pts = randItem(TRIANGLES);
+      const cls = classifyTriangle(pts).sides;
+      const opts = ["משולש שווה־צלעות", "משולש שווה־שוקיים", "משולש שונה־צלעות"];
+      askMC({
+        prompt: "איזה משולש זה — לפי הצלעות? 📏",
+        shape: polygonSvg(pts, { fill: "#dcfce7" }),
+        options: opts, correctIndex: opts.indexOf(SIDE_HE[cls]),
+        explain: SIDE_WHY[cls], speakText: "איזה משולש זה לפי הצלעות?", next,
+      });
+    }
+
+    function roundAngles(next) {
+      const pts = randItem(TRIANGLES);
+      const cls = classifyTriangle(pts).angles;
+      const opts = ["משולש ישר־זווית", "משולש חד־זוויות", "משולש קהה־זווית"];
+      askMC({
+        prompt: "איזה משולש זה — לפי הזוויות? 🔺",
+        shape: polygonSvg(pts, { fill: "#fde7f1" }),
+        options: opts, correctIndex: opts.indexOf(ANGLE_HE[cls]),
+        explain: ANGLE_WHY[cls], speakText: "איזה משולש זה לפי הזוויות?", next,
+      });
+    }
+
+    function roundWhoAmI(next) {
+      const r = randItem(RIDDLES);
+      const opts = shuffle(r.o);
+      askMC({
+        prompt: r.q, options: opts, correctIndex: opts.indexOf(r.a),
+        explain: "התשובה הנכונה: " + r.a + ".", speakText: r.q, next,
+      });
+    }
+
+    function roundTrueFalse(next) {
+      const t = randItem(TF);
+      const opts = ["נכון ✓", "לא נכון ✗"];
+      askMC({
+        prompt: t.s, options: opts, correctIndex: t.ans ? 0 : 1,
+        explain: t.why, speakText: t.s, next,
+      });
+    }
+
+    function roundBiggest(next) {
+      const q = randItem(QUADS);
+      const angs = polygonAngles(q);
+      const idx = angs.indexOf(Math.max(...angs));
+      const labels = ["1", "2", "3", "4"];
+      const prompt = "איזו מהזוויות של המרובע היא הגדולה ביותר?";
+      askMC({
+        prompt, shape: polygonSvg(q, { labels, fill: "#e9e0ff" }),
+        options: labels.map(n => "זווית " + n),
+        correctIndex: idx,
+        explain: `הזווית הגדולה ביותר היא זווית מספר ${idx + 1}.`,
+        speakText: prompt, next,
+      });
+    }
+
+    const ROUNDS = { angleType: roundAngleType, whoAmI: roundWhoAmI, sides: roundSides, angles: roundAngles, biggest: roundBiggest, trueFalse: roundTrueFalse };
+
+    /* ---------- הפעלה ---------- */
+    function play(mode) {
+      if (mode === "progress") { showStage(); renderProgress(stage, PLAYER); speakHe("זאת ההתקדמות שלך. כל הכבוד!"); return; }
+      showStage();
+      if (mode === "mixed") {
+        const go = () => randItem(Object.values(ROUNDS))(go);
+        go();
+      } else {
+        const fn = ROUNDS[mode];
+        const go = () => fn(go);
+        go();
+      }
+    }
+
+    if (location.hash === "#progress") play("progress");
+  </script>
+</body>
+</html>
