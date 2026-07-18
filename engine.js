@@ -45,12 +45,19 @@ function forSpeech(t) {
 function speakHe(text, { rate = 0.95, pitch = 1.0 } = {}) {
   return new Promise(resolve => {
     if (!window.speechSynthesis) return resolve();
+    if (!VOICES.length) loadVoices();          // ודא שהקולות נטענו לפני ההקראה
+    try { speechSynthesis.resume(); } catch (e) {}
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(forSpeech(text));
-    u.lang = "he-IL"; u.rate = rate; u.pitch = pitch;
-    const v = pickVoice("he-IL"); if (v) u.voice = v;
-    u.onend = resolve; u.onerror = resolve;
-    speechSynthesis.speak(u);
+    const speak = () => {
+      const u = new SpeechSynthesisUtterance(forSpeech(text));
+      u.lang = "he-IL"; u.rate = rate; u.pitch = pitch;
+      const v = pickVoice("he-IL"); if (v) u.voice = v;
+      u.onend = resolve; u.onerror = resolve;
+      try { speechSynthesis.speak(u); } catch (e) { resolve(); }
+    };
+    /* הפרדה קצרה בין cancel ל-speak — עוקפת באג ב-Chrome/Edge שבו
+       הקראה שמופעלת מיד אחרי cancel "נתקעת" ולא נשמעת. */
+    setTimeout(speak, 70);
   });
 }
 

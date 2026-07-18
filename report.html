@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>לוח הורה — שבילים 9 👨‍👩‍👧</title>
+  <script>document.write('<link rel="stylesheet" href="style.css?t=' + Date.now() + '">');</script>
+  <style>
+    .rep-day { background: #fff; border-radius: 22px; box-shadow: var(--shadow); padding: 16px 16px 8px;
+               margin: 0 auto 20px; max-width: 760px; }
+    .rep-day h3 { margin: 4px 0 10px; font-size: 22px; color: var(--purple); }
+    .rep-table { width: 100%; border-collapse: collapse; font-size: 16px; }
+    .rep-table th { background: #f4f0ff; padding: 9px 8px; font-weight: 800; }
+    .rep-table td { padding: 9px 8px; border-top: 2px solid #f4f0ff; font-weight: 700; text-align: center; }
+    .rep-table td.name { text-align: right; }
+    .bar-cell { position: relative; }
+    .bar-fill { display: inline-block; height: 12px; border-radius: 999px;
+                background: linear-gradient(90deg, var(--teal), var(--purple)); vertical-align: middle; }
+    .acc-good { color: #166534; } .acc-mid { color: #b45309; } .acc-low { color: #991b1b; }
+    .rep-empty { color: var(--ink-soft); font-weight: 700; font-size: 18px; margin-top: 30px; }
+    .rep-note { color: var(--ink-soft); font-size: 14px; max-width: 760px; margin: 0 auto 18px; }
+    .kid-row { max-width: 760px; margin: 0 auto 16px; display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+    .kid-row input { font-family: inherit; font-size: 16px; padding: 8px 12px; border-radius: 12px; border: 2px solid #d9c9f5; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn-back" onclick="location.href='index.html'">⬅️ חזרה</button>
+      <div class="score">👨‍👩‍👧 לוח הורה</div>
+    </div>
+    <h1 class="page-title">ההתקדמות של הילדה 📊</h1>
+    <p class="subtitle">אחוז השאלות מכל פרק (לכל יום) · וכמה ענתה נכון מכל סוג</p>
+    <div id="report"><div class="rep-empty">טוען…</div></div>
+  </div>
+
+  <script>
+    // ---- הגדרות Supabase (יתמלאו כשיהיו הפרטים) ----
+    const CONF = { url: "https://rgqiyqsabylcylsmdnsi.supabase.co", key: "sb_publishable_SliU4OTdrqAFqoRriuh1Ew_PST1CEdy", kid: "esti-4a7f2c9d" };
+
+    const TYPE_NAMES = {
+      chain: "סדר פעולות", word: "בעיה ותרגיל", whichFrac: "כמה על החלק", partQty: "חלק מכמות",
+      cmpFrac: "השוואת שברים", divis: "סימני התחלקות", gem: "גימטריה (אבג)", neg: "מספרים שליליים",
+      beforeAfter: "מספרים עד 10,000", chart: "חקר נתונים", riddle: "מי אני?", pattern: "חוקיות בסדרה",
+      place: "ערך הספרה", wholes: "שלמים וחלקים", compareExpr: "שווה או לא?", complete: "השלמה לתוצאה",
+      groups: "קבוצות שוות 🚀", boysGirls: "בנים ובנות 🚀", clueNumber: "מספר לפי רמזים 🚀",
+      vmult: "כפל מאונך", vdetail: "כפל מפורט", wholesType: "חלקים ושלמים",
+    };
+    const name = t => TYPE_NAMES[t] || t;
+
+    async function getData() {
+      if (CONF.url && CONF.key && CONF.kid) {
+        try {
+          const r = await fetch(`${CONF.url}/rest/v1/progress?kid_id=eq.${encodeURIComponent(CONF.kid)}&select=day,type,attempts,correct`,
+            { headers: { apikey: CONF.key, Authorization: "Bearer " + CONF.key } });
+          const rows = await r.json();
+          const d = {};
+          rows.forEach(x => { (d[x.day] = d[x.day] || {})[x.type] = { a: x.attempts, c: x.correct }; });
+          return d;
+        } catch (e) { return {}; }
+      }
+      try { return JSON.parse(localStorage.getItem("mg_track_girl")) || {}; } catch (e) { return {}; }
+    }
+
+    function accClass(p) { return p >= 80 ? "acc-good" : (p >= 50 ? "acc-mid" : "acc-low"); }
+    function heDate(iso) { const [y, m, dd] = iso.split("-"); return `${dd}/${m}/${y}`; }
+
+    function render(data) {
+      const box = document.getElementById("report");
+      const days = Object.keys(data).sort().reverse();
+      if (!days.length) {
+        box.innerHTML = `<div class="rep-empty">עדיין אין נתונים.${CONF.url ? "" : " (במצב מקומי הנתונים נמצאים רק על מחשב הילדה — יופיעו כאן אחרי חיבור Supabase.)"}</div>`;
+        return;
+      }
+      // ---- סיכום כולל לכל סוג ----
+      const tot = {};
+      days.forEach(day => Object.entries(data[day]).forEach(([t, r]) => {
+        tot[t] = tot[t] || { a: 0, c: 0 }; tot[t].a += r.a; tot[t].c += r.c;
+      }));
+      let html = `<div class="rep-day"><h3>סיכום כולל — כמה ענתה נכון מכל סוג</h3><table class="rep-table">`
+        + `<tr><th>פרק</th><th>נכון / סה"כ</th><th>אחוז הצלחה</th></tr>`;
+      Object.entries(tot).sort((a, b) => b[1].a - a[1].a).forEach(([t, r]) => {
+        const p = Math.round(r.c / r.a * 100);
+        html += `<tr><td class="name">${name(t)}</td><td>${r.c} / ${r.a}</td><td class="${accClass(p)}">${p}%</td></tr>`;
+      });
+      html += `</table></div>`;
+
+      // ---- פירוט לכל יום ----
+      days.forEach(day => {
+        const types = data[day];
+        const dayTotal = Object.values(types).reduce((s, r) => s + r.a, 0);
+        html += `<div class="rep-day"><h3>${heDate(day)} — סה"כ ${dayTotal} שאלות</h3><table class="rep-table">`
+          + `<tr><th>פרק</th><th>שאלות</th><th>% מהיום</th><th>נכון / סה"כ</th><th>הצלחה</th></tr>`;
+        Object.entries(types).sort((a, b) => b[1].a - a[1].a).forEach(([t, r]) => {
+          const pct = Math.round(r.a / dayTotal * 100);
+          const acc = Math.round(r.c / r.a * 100);
+          html += `<tr><td class="name">${name(t)}</td>`
+            + `<td>${r.a}</td>`
+            + `<td class="bar-cell">${pct}% <span class="bar-fill" style="width:${Math.max(6, pct)}px"></span></td>`
+            + `<td>${r.c} / ${r.a}</td>`
+            + `<td class="${accClass(acc)}">${acc}%</td></tr>`;
+        });
+        html += `</table></div>`;
+      });
+      box.innerHTML = html;
+    }
+
+    getData().then(render);
+  </script>
+</body>
+</html>
