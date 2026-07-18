@@ -42,6 +42,34 @@
     const stage = document.getElementById("stage");
     Score.init(document.getElementById("score"), PLAYER);
 
+    /* ---- מעקב לפי סוג ולפי יום (לדוח "שימוש באפליקציה") — אותו Supabase כמו שבילים 9 ---- */
+    const CONF = { url: "https://rgqiyqsabylcylsmdnsi.supabase.co", key: "sb_publishable_SliU4OTdrqAFqoRriuh1Ew_PST1CEdy", kid: "esti-4a7f2c9d" };
+    function syncProgress(day, type, rec) {
+      if (!CONF.url || !CONF.key || !CONF.kid) return;
+      try {
+        fetch(`${CONF.url}/rest/v1/progress?on_conflict=kid_id,day,type`, {
+          method: "POST",
+          headers: { apikey: CONF.key, Authorization: "Bearer " + CONF.key, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify({ kid_id: CONF.kid, day, type, attempts: rec.a, correct: rec.c }),
+        }).catch(() => {});
+      } catch (e) {}
+    }
+    let _curType = "";
+    const Track = {
+      key() { return "mg_track_" + PLAYER; },
+      load() { try { return JSON.parse(localStorage.getItem(this.key())) || {}; } catch (e) { return {}; } },
+      save(d) { try { localStorage.setItem(this.key(), JSON.stringify(d)); } catch (e) {} },
+      today() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); },
+      record(type, correct) {
+        if (!type) return;
+        const d = this.load(), day = this.today();
+        (d[day] = d[day] || {})[type] = d[day][type] || { a: 0, c: 0 };
+        d[day][type].a++; if (correct) d[day][type].c++;
+        this.save(d);
+        syncProgress(day, type, d[day][type]);
+      },
+    };
+
     function showMenu() { speechSynthesis && speechSynthesis.cancel(); menu.classList.remove("hidden"); stageWrap.classList.add("hidden"); }
     function showStage() { speechSynthesis && speechSynthesis.cancel(); menu.classList.add("hidden"); stageWrap.classList.remove("hidden"); stage.innerHTML = ""; }
     document.getElementById("back").onclick = () => {
@@ -65,10 +93,12 @@
       actions.append(hear, nextBtn);
 
       const buttons = [];
+      let answered = false;
       options.forEach((label, i) => {
         const b = el("button", "opt", label);
         b.onclick = () => {
           if (b.disabled || nextBtn.classList.contains("hidden") === false) return;
+          if (!answered) { answered = true; Track.record(_curType, i === correctIndex); }
           if (i === correctIndex) {
             b.classList.add("correct");
             buttons.forEach(x => x.disabled = true);
@@ -320,13 +350,13 @@
       if (mode === "progress") { showStage(); renderProgress(stage, PLAYER); speakHe("זאת ההתקדמות שלך. כל הכבוד!"); return; }
       showStage();
       if (mode === "sideNames") {
-        learnSides(() => { const go = () => roundSideNames(go); go(); });
+        _curType = "sideNames";
+        learnSides(() => { const go = () => { _curType = "sideNames"; roundSideNames(go); }; go(); });
       } else if (mode === "mixed") {
-        const go = () => randItem(Object.values(ROUNDS))(go);
+        const go = () => { const k = randItem(Object.keys(ROUNDS)); _curType = k; ROUNDS[k](go); };
         go();
       } else {
-        const fn = ROUNDS[mode];
-        const go = () => fn(go);
+        const go = () => { _curType = mode; ROUNDS[mode](go); };
         go();
       }
     }
